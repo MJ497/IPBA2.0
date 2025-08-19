@@ -26,7 +26,7 @@
     .muted-italic { color:#666; font-style:italic; font-size:0.95rem }
     .controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap }
     .pager { display:flex; gap:6px; align-items:center; margin-top:8px }
-    .small-btn { padding:6px 8px; border-radius:6px; background:#eee; border:1px solid #ddd; cursor:pointer }
+    .small-btn { padding:6px 8px; border-radius:6px; background:#0b72ff; border:1px solid #ddd; cursor:pointer }
   </style>
 </head>
 <body>
@@ -357,7 +357,7 @@
                     <td>${alphaStr}</td>
                     <td>${used}</td>
                     <td>${numer}${numer && denom ? ' / ' : ''}${denom}</td>
-                    <td>${note} <button class="small-btn" data-step="${globalIdx}">Show α list</button></td>
+                    <td>${note} <button style = "background-color:blue" class="small-btn" data-step="${globalIdx}">Show α list</button></td>
                   </tr>`;
         });
         tbl += '</tbody></table>';
