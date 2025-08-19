@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>IPBA Demo — seeds + paginated iterations</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin:18px; color:#111; background:#f7f8fb }
+    .container { max-width:1100px; margin:0 auto; }
+    h1 { margin-bottom:4px }
+    .muted { color:#555; font-size:0.95rem }
+    .card { background:white; border-radius:10px; padding:14px; margin-top:12px; box-shadow:0 6px 18px rgba(20,20,40,0.04) }
+    label { display:block; font-weight:700; margin-bottom:6px }
+    small.formula { display:block; color:#444; margin-top:6px; font-family: "Courier New", monospace; background:#fafafa; padding:6px; border-radius:6px }
+    input, textarea, select { width:100%; padding:8px 10px; border-radius:8px; border:1px solid #d7dbe0; font-family:inherit; box-sizing:border-box }
+    textarea { min-height:84px; resize:vertical }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px }
+    button { border:0; background:#0b72ff; color:white; padding:10px 14px; border-radius:8px; cursor:pointer }
+    table { width:100%; border-collapse:collapse; margin-top:12px; font-family:monospace }
+    th, td { padding:8px; border:1px solid #e8eaee; text-align:left }
+    .error { color:#b00020; font-weight:700 }
+    .info-row { display:flex; gap:8px; align-items:center }
+    .small-muted { color:#666; font-size:0.9rem }
+    .notice { color:#0b72ff; font-weight:600; margin-left:8px }
+    .preview { background:#fcfdff; border:1px dashed #e2e6f0; padding:12px; border-radius:8px; font-family:monospace; white-space:pre-wrap }
+    .muted-italic { color:#666; font-style:italic; font-size:0.95rem }
+    .controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap }
+    .pager { display:flex; gap:6px; align-items:center; margin-top:8px }
+    .small-btn { padding:6px 8px; border-radius:6px; background:#eee; border:1px solid #ddd; cursor:pointer }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>IPBA Demo — pick seeds, view LP & paginated iterations</h1>
+    <p class="muted">Choose support seed count (6 or 8), set max iterations and iterations-per-page — the initial design matrix, optimal starting point and paginated iteration table will be shown.</p>
+
+    <div class="card">
+      <div class="grid">
+        <div>
+          <label>Number of variables (n)</label>
+          <input id="nVars" type="number" value="3" min="1" />
+        </div>
+
+        <div>
+          <label>Number of constraints (m)</label>
+          <input id="nCons" type="number" value="1" min="1" />
+        </div>
+
+        <div>
+          <label>Objective</label>
+          <select id="objective"><option value="max">Maximize</option><option value="min">Minimize</option></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <label>Objective coefficients c (comma-separated)</label>
+      <textarea id="cCoeffs">1,1,1</textarea>
+    </div>
+
+    <div class="card">
+      <label>Constraint matrix A (m rows, n cols)</label>
+      <textarea id="Amatrix">1,1,1</textarea>
+    </div>
+
+    <div class="card">
+      <label>Right-hand side b (m values, comma-separated)</label>
+      <input id="bVals" type="text" value="80000" />
+    </div>
+
+    <div class="card">
+      <div class="grid">
+        <div>
+          <label>Support seeds to generate</label>
+          <select id="seedCount">
+            <option value="6">6 seeds</option>
+            <option value="8">8 seeds</option>
+          </select>
+          <small class="small-muted">Pick either 6 or 8 as requested.</small>
+        </div>
+
+        <div>
+          <label>Max iterations (run)</label>
+          <input id="maxIter" type="number" value="10" min="1" />
+        </div>
+
+        <div>
+          <label>Iterations per page (pagination)</label>
+          <select id="itersPerPage">
+            <option value="3">3 per page</option>
+            <option value="5" selected>5 per page</option>
+            <option value="10">10 per page</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card info-row">
+      <div style="flex:1;" class="controls">
+        <button id="runBtn">Run IPBA</button>
+        <button id="previewBtn" type="button" style="background:#0b72ff">Update Preview</button>
+        <button id="resetBtn" type="button" style="background:#666">Reset</button>
+      </div>
+      <div id="status" class="small-muted">Ready</div>
+    </div>
+
+    <div class="card">
+      <label>LP model (values substituted)</label>
+      <div id="lpModelPreview" class="preview">LP model will appear here</div>
+    </div>
+
+    <div class="card">
+      <label>Initial design matrix (support seeds)</label>
+      <div id="initialDesign" class="preview">Seeds will appear here</div>
+      <small class="muted-italic">You chose the number of support seeds above; the solver will use these seeds and pick the optimal starting point from them.</small>
+    </div>
+
+    <div id="runResults"></div>
+
+  </div>
+
+  <script>
+  (function(){
+    // helpers
+    const $ = id => document.getElementById(id);
+    const toNums = s => (s||'').split(',').map(t => parseFloat(t.trim())).filter(n => !Number.isNaN(n));
+    const parseMatrix = (txt, expectedRows, expectedCols) => {
+      const rows = (txt||'').trim().split(/\r?\n/).map(r => r.trim()).filter(r => r !== '');
+      if (expectedRows != null && rows.length !== expectedRows) {
+        if (!(expectedRows === 1 && rows.length === 1)) throw `Expected ${expectedRows} row(s) but got ${rows.length}`;
+      }
+      return rows.map(r => {
+        const cols = r.split(',').map(x => parseFloat(x.trim()));
+        if (expectedCols != null && cols.length !== expectedCols) throw `Expected ${expectedCols} column(s) but got ${cols.length}`;
+        if (cols.some(v => Number.isNaN(v))) throw 'Invalid numeric in matrix';
+        return cols;
+      });
+    };
+    const dot = (a,b) => a.reduce((s,v,i)=> s + v*(b[i] ?? 0), 0);
+    const norm = v => Math.sqrt(dot(v,v));
+    const scale = (v,s) => v.map(x=>x*s);
+    const add = (a,b) => a.map((x,i)=> x + (b[i] ?? 0));
+    const zeros = n => Array.from({length:n}, ()=>0);
+    const formatVec = (v, decimals=6) => '[' + v.map(x => (Math.abs(x) < 1e-12 ? 0 : Number.parseFloat(x).toFixed(decimals))).join(', ') + ']';
+
+    // Build support seeds but allow forcing desiredCount (6 or 8)
+    function buildSupportPoints(n, A, b, desiredCount = 6) {
+      // We'll try to produce desiredCount seeds. Use the document's heuristic seeds and then pad or trim.
+      const seeds = [];
+      // generate feasibility seeds for single-row A
+      if (A.length === 1) {
+        const row = A[0];
+        // single-variable extremes: set one variable to b/row[j] if row[j]!=0
+        for (let j=0; j<n && seeds.length < desiredCount; j++) {
+          if (Math.abs(row[j]) > 1e-12) {
+            const x = zeros(n); x[j] = b[0] / row[j];
+            if (x.every(v => v >= -1e-9)) seeds.push(x.map(v => Math.max(0, v)));
+          }
+        }
+        // equal distribution
+        const sumRow = row.reduce((s,v)=>s+v,0) || n;
+        const equal = zeros(n).map(()=> b[0] / sumRow);
+        if (equal.every(v=>v>=0)) seeds.push(equal);
+        // some random proportional seeds
+        let attempts = 0;
+        while (seeds.length < desiredCount && attempts < 50) {
+          attempts++;
+          const r = Array.from({length:n},()=> Math.random());
+          const denom = dot(r, row);
+          if (Math.abs(denom) > 1e-12) {
+            const scaleFactor = b[0] / denom;
+            const x = scale(r, scaleFactor).map(v => Math.max(0, v));
+            seeds.push(x);
+          }
+        }
+      } else {
+        // multiple-row fallback: basis-like seeds (unit vectors scaled) and some randoms
+        for (let i=0;i<n && seeds.length < desiredCount;i++){
+          const x = zeros(n); x[i] = 1; seeds.push(x);
+        }
+        let attempts = 0;
+        while (seeds.length < desiredCount && attempts < 50) {
+          attempts++;
+          seeds.push(zeros(n).map(()=>Math.random()*1));
+        }
+      }
+
+      // normalize seed length to desiredCount: trim or pad using small positive vectors
+      while (seeds.length > desiredCount) seeds.pop();
+      while (seeds.length < desiredCount) seeds.push(zeros(n).map(()=>1));
+      return seeds.map(s => s.map(v => Number.parseFloat(v)));
+    }
+
+    function renderMatrixTable(A, b) {
+      let html = '<table><thead><tr><th>#</th>';
+      for (let j=0;j<(A[0]||[]).length;j++) html += `<th>x${j+1}</th>`;
+      html += '<th>b</th></tr></thead><tbody>';
+      for (let i=0;i<A.length;i++){
+        html += `<tr><td>${i+1}</td>`;
+        for (let j=0;j<A[i].length;j++) html += `<td>${Number(A[i][j]).toFixed(6)}</td>`;
+        html += `<td>${(b[i]===undefined)?'':Number(b[i]).toFixed(6)}</td></tr>`;
+      }
+      html += '</tbody></table>';
+      return html;
+    }
+
+    function renderSeedsTable(seeds) {
+      if (!seeds || seeds.length===0) return '<div>No seeds</div>';
+      let html = '<table><thead><tr><th>seed</th>';
+      for (let j=0;j<seeds[0].length;j++) html += `<th>x${j+1}</th>`;
+      html += '<th>Objective (D)</th></tr></thead><tbody>';
+      seeds.forEach((s, idx) => {
+        html += `<tr><td>${idx+1}</td>${s.map(v=>`<td>${Number(v).toFixed(6)}</td>`).join('')}`;
+        html += `<td class="small-muted">${Number(dot(window._previewC || [], s) || 0).toFixed(6)}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      return html;
+    }
+
+    // IPBA core (same formulas)
+    function ipba(cIn, A, b, objective='max', eps=1e-4, maxIter=200, desiredSeedCount=6) {
+      let c = cIn.slice();
+      const n = c.length, m = A.length;
+      let flipped = false;
+      if (objective === 'min') { c = c.map(v => -v); flipped = true; }
+
+      // seeds and choose best seed as starting point:
+      const seeds = buildSupportPoints(n, A, b, desiredSeedCount);
+      let bestVal = -Infinity, bestX = seeds[0].slice();
+      seeds.forEach(x => {
+        const val = dot(c, x);
+        if (val > bestVal) { bestVal = val; bestX = x.slice(); }
+      });
+
+      let x = bestX.slice();
+      let prevVal = dot(c, x);
+      const path = [{ x: x.slice(), value: prevVal }];
+
+      for (let iter = 0; iter < maxIter; iter++){
+        let d = c.slice();
+        const dnorm = norm(d);
+        if (dnorm === 0) break;
+        const dstar = scale(d, 1/dnorm);
+
+        // compute alpha candidates for all constraints (store numer/denom)
+        const alphas = [];
+        for (let i=0;i<m;i++){
+          const ai = A[i];
+          const denom = dot(ai, dstar);
+          if (Math.abs(denom) < 1e-12) {
+            // constraint nearly orthogonal to d*
+            alphas.push({i, alpha: NaN, numer: NaN, denom});
+            continue;
+          }
+          const numer = b[i] - dot(ai, x);
+          const alpha = numer / denom;
+          alphas.push({i, alpha, numer, denom});
+        }
+
+        // choose alpha according to objective
+        const finiteAlphas = alphas.filter(a => Number.isFinite(a.alpha));
+        if (finiteAlphas.length === 0) break;
+
+        let chosenAlphaObj;
+        if (objective === 'max') {
+          // choose largest positive alpha; if none positive, choose largest anyway
+          const positives = finiteAlphas.filter(a => a.alpha > 0);
+          chosenAlphaObj = (positives.length ? positives : finiteAlphas).reduce((a,b)=> (a.alpha > b.alpha ? a : b));
+        } else {
+          const positives = finiteAlphas.filter(a => a.alpha > 0);
+          chosenAlphaObj = (positives.length ? positives : finiteAlphas).reduce((a,b)=> (a.alpha < b.alpha ? a : b));
+        }
+
+        const alpha = chosenAlphaObj.alpha;
+        if (!isFinite(alpha) || alpha <= 0) break;
+        x = add(x, scale(dstar, alpha));
+        for (let j=0;j<n;j++) if (x[j] < 0) x[j] = 0;
+        const currVal = dot(c, x);
+        path.push({ x: x.slice(), value: currVal, usedConstraint: chosenAlphaObj.i, alpha, numer: chosenAlphaObj.numer, denom: chosenAlphaObj.denom, allAlphas: alphas });
+        if (Math.abs(currVal - prevVal) < eps) { prevVal = currVal; break; }
+        prevVal = currVal;
+      }
+      const finalObjective = flipped ? -prevVal : prevVal;
+      return { x, value: finalObjective, path, seeds };
+    }
+
+    // preview update
+    function updatePreview() {
+      try {
+        const n = Math.max(1, parseInt($('nVars').value,10));
+        const m = Math.max(1, parseInt($('nCons').value,10));
+        let c = toNums($('cCoeffs').value).map(x=> +x);
+        if (c.length !== n) c = new Array(n).fill(1);
+        window._previewC = c; // for seed objective rendering
+        const A = parseMatrix($('Amatrix').value, m, n);
+        const b = toNums($('bVals').value);
+        while (b.length < m) b.push(NaN);
+
+        // build model text
+        const objectiveWord = $('objective').value === 'max' ? 'Maximize' : 'Minimize';
+        let model = `${objectiveWord} D = `;
+        model += c.map((ci,i) => `${Number(ci).toFixed(6)}·x${i+1}`).join(' + ') + '\n\n';
+        model += 'subject to:\n';
+        for (let i=0;i<m;i++){
+          const row = A[i];
+          const lhs = row.map((aij,j) => `${Number(aij).toFixed(6)}·x${j+1}`).join(' + ');
+          const bi = (b[i]===undefined) ? '??' : Number(b[i]).toFixed(6);
+          model += `  (${i+1})  ${lhs}  =  ${bi}\n`;
+        }
+        model += '\n  x_j ≥ 0 for all j\n';
+        $('lpModelPreview').textContent = model;
+
+        // seeds
+        const desiredCount = parseInt($('seedCount').value,10) || 6;
+        const seeds = buildSupportPoints(n, A, b, desiredCount);
+        $('initialDesign').innerHTML = renderSeedsTable(seeds);
+
+      } catch (err) {
+        $('lpModelPreview').innerHTML = `<span class="error">Preview error: ${err}</span>`;
+        $('initialDesign').innerHTML = '';
+      }
+    }
+
+    // utility: render paginated iteration table
+    function renderIterationsPager(path, perPage, container) {
+      container.innerHTML = '';
+      if (!Array.isArray(path) || path.length === 0) {
+        container.innerHTML = '<div class="card">No iterations</div>';
+        return;
+      }
+
+      const total = path.length;
+      const pageCount = Math.max(1, Math.ceil(total / perPage));
+      let currentPage = 1;
+
+      function drawPage(page) {
+        container.innerHTML = '';
+        const start = (page-1)*perPage;
+        const end = Math.min(total, start + perPage);
+        const slice = path.slice(start, end);
+
+        const card = document.createElement('div'); card.className='card';
+        card.innerHTML = `<h4>Iterations (showing ${start+1}–${end} of ${total})</h4>`;
+        // table with step, x, value, alpha, constraint, numer/denom, details link
+        let tbl = `<table><thead><tr><th>step</th><th>x (vector)</th><th>D value</th><th>α</th><th>constraint</th><th>numer/denom</th><th>notes</th></tr></thead><tbody>`;
+        slice.forEach((it, idx) => {
+          const globalIdx = start + idx;
+          const alphaStr = (it.alpha !== undefined && Number.isFinite(it.alpha)) ? Number(it.alpha).toFixed(6) : '';
+          const used = (it.usedConstraint !== undefined && it.usedConstraint !== null) ? (it.usedConstraint+1) : '';
+          const numer = (it.numer !== undefined && Number.isFinite(it.numer)) ? Number(it.numer).toFixed(6) : '';
+          const denom = (it.denom !== undefined && Number.isFinite(it.denom)) ? Number(it.denom).toFixed(6) : '';
+          const note = (it.alpha!==undefined) ? (it.alpha>0 ? 'positive α' : 'non-positive α') : 'seed';
+          tbl += `<tr>
+                    <td>${globalIdx}</td>
+                    <td>${it.x.map(v=>Number(v).toFixed(6)).join(', ')}</td>
+                    <td>${Number(it.value).toFixed(6)}</td>
+                    <td>${alphaStr}</td>
+                    <td>${used}</td>
+                    <td>${numer}${numer && denom ? ' / ' : ''}${denom}</td>
+                    <td>${note} <button class="small-btn" data-step="${globalIdx}">Show α list</button></td>
+                  </tr>`;
+        });
+        tbl += '</tbody></table>';
+        card.innerHTML += tbl;
+
+        // pager controls
+        const pager = document.createElement('div'); pager.className='pager';
+        const prev = document.createElement('button'); prev.className='small-btn'; prev.textContent='Prev'; prev.disabled = page===1;
+        const next = document.createElement('button'); next.className='small-btn'; next.textContent='Next'; next.disabled = page===pageCount;
+        const info = document.createElement('div'); info.textContent = `Page ${page} / ${pageCount}`;
+        pager.appendChild(prev); pager.appendChild(info); pager.appendChild(next);
+        card.appendChild(pager);
+        container.appendChild(card);
+
+        // attach event handlers
+        prev.addEventListener('click', ()=> { if (page>1) { drawPage(page-1); } });
+        next.addEventListener('click', ()=> { if (page<pageCount) { drawPage(page+1); } });
+
+        // show α list handler
+        card.querySelectorAll('button.small-btn[data-step]').forEach(btn => {
+          btn.addEventListener('click', (ev)=> {
+            const stepIdx = parseInt(btn.getAttribute('data-step'),10);
+            const it = path[stepIdx];
+            if (!it) return;
+            const rows = (it.allAlphas || []).map(a => {
+              const alpha = Number.isFinite(a.alpha) ? a.alpha.toFixed(6) : 'NaN';
+              const numer = Number.isFinite(a.numer) ? a.numer.toFixed(6) : 'NaN';
+              const denom = Number.isFinite(a.denom) ? a.denom.toFixed(6) : 'NaN';
+              return `constraint ${a.i+1}: α=${alpha} (numer=${numer}, denom=${denom})`;
+            }).join('\n');
+            alert(`α candidates at step ${stepIdx}:\n\n${rows}`);
+          });
+        });
+      }
+
+      drawPage(currentPage);
+    }
+
+    // run handler
+    $('runBtn').addEventListener('click', () => {
+      try {
+        $('runResults').innerHTML = '';
+        setStatus('Running IPBA...');
+        const n = Math.max(1, parseInt($('nVars').value,10));
+        const m = Math.max(1, parseInt($('nCons').value,10));
+        const objective = $('objective').value;
+        let c = toNums($('cCoeffs').value).map(x=> +x);
+        if (c.length !== n) { c = new Array(n).fill(1); $('cCoeffs').value = c.join(','); }
+        const A = parseMatrix($('Amatrix').value, m, n);
+        const b = toNums($('bVals').value);
+        if (b.length !== m) throw 'Length of b must equal m';
+        const maxIter = Math.max(1, parseInt($('maxIter').value,10) || 10);
+        const desiredSeedCount = parseInt($('seedCount').value,10) || 6;
+        const itersPerPage = Math.max(1, parseInt($('itersPerPage').value,10) || 5);
+
+        // run ipba
+        const res = ipba(c, A, b, objective, Math.abs(parseFloat($('eps')?.value||1e-6)), maxIter, desiredSeedCount);
+
+        // determine optimal starting point (best seed by objective c·x)
+        const seeds = res.seeds;
+        let bestVal = -Infinity, bestIdx = 0;
+        seeds.forEach((s, idx) => {
+          const v = dot(c, s);
+          if (v > bestVal) { bestVal = v; bestIdx = idx; }
+        });
+
+        // prepare run results
+        const container = document.createElement('div'); container.className='card';
+        container.innerHTML = `<h3>Run results (maxIter = ${maxIter}, seeds = ${desiredSeedCount})</h3>`;
+
+        // LP model + A table
+        const modelPre = document.createElement('div'); modelPre.innerHTML = `<strong>LP model (values):</strong><pre style="font-family:monospace">${$('lpModelPreview').textContent}</pre>`;
+        container.appendChild(modelPre);
+
+        // initial design seeds table
+        const seedsDiv = document.createElement('div');
+        seedsDiv.innerHTML = `<strong>Initial design matrix (seeds):</strong>${renderSeedsTable(seeds)}`;
+        container.appendChild(seedsDiv);
+
+        // optimal starting point
+        const optDiv = document.createElement('div');
+        optDiv.style.marginTop = '10px';
+        optDiv.innerHTML = `<strong>Optimal starting point (best seed):</strong>
+          <div>seed #${bestIdx+1} : ${formatVec(seeds[bestIdx],6)}   (D = ${dot(c,seeds[bestIdx]).toFixed(6)})</div>`;
+        container.appendChild(optDiv);
+
+        // final variables & objective
+        const finalDiv = document.createElement('div'); finalDiv.style.marginTop='12px';
+        finalDiv.innerHTML = `<strong>Final variables</strong>
+          <table><thead><tr><th>var</th><th>value</th></tr></thead><tbody>
+            ${res.x.map((v,i)=>`<tr><td>x${i+1}</td><td>${v.toFixed(6)}</td></tr>`).join('')}
+          </tbody></table>
+          <p><strong>Objective value:</strong> ${res.value.toFixed(6)}</p>`;
+        container.appendChild(finalDiv);
+
+        // iteration pager
+        const pathDiv = document.createElement('div'); pathDiv.style.marginTop = '12px';
+        container.appendChild(pathDiv);
+        renderIterationsPager(res.path, itersPerPage, pathDiv);
+
+        $('runResults').appendChild(container);
+        setStatus('Done');
+      } catch (e) {
+        $('runResults').innerHTML = `<div class="card error">Error: ${e}</div>`;
+        setStatus('Error');
+      }
+    });
+
+    // preview button
+    $('previewBtn').addEventListener('click', updatePreview);
+
+    // auto update preview on input changes
+    ['nVars','nCons','cCoeffs','Amatrix','bVals','objective','seedCount'].forEach(id => {
+      $(id).addEventListener('input', updatePreview);
+    });
+
+    // reset
+    $('resetBtn').addEventListener('click', () => {
+      $('nVars').value = 3; $('nCons').value = 1; $('objective').value = 'max';
+      $('cCoeffs').value = '1,1,1'; $('Amatrix').value = '1,1,1'; $('bVals').value = '80000';
+      $('seedCount').value = '6'; $('maxIter').value='10'; $('itersPerPage').value='5';
+      $('runResults').innerHTML=''; setStatus('Ready'); updatePreview();
+    });
+
+    function setStatus(s){ $('status').textContent = s; }
+    // init
+    updatePreview();
+
+    // expose small API for debug
+    window._ipba = { buildSupportPoints, ipba };
+  })();
+  </script>
+</body>
+</html>
