@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic IPBA Algorithm</title>
+    <title>Enhanced IPBA Algorithm</title>
     <style>
         * {
             box-sizing: border-box;
@@ -166,6 +166,7 @@
             width: 100%;
             border-collapse: collapse;
             margin: 15px 0;
+            font-size: 14px;
         }
         
         table, th, td {
@@ -173,7 +174,7 @@
         }
         
         th, td {
-            padding: 12px;
+            padding: 10px;
             text-align: center;
         }
         
@@ -190,6 +191,8 @@
             font-family: monospace;
             white-space: pre-wrap;
             border-radius: 0 4px 4px 0;
+            font-size: 14px;
+            overflow-x: auto;
         }
         
         .result {
@@ -247,10 +250,9 @@
             margin: 10px 0;
         }
         
-        .add-remove-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
+        .support-point-input {
+            width: 60px;
+            text-align: center;
         }
         
         @media (max-width: 768px) {
@@ -268,7 +270,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>Dynamic IPBA Algorithm</h1>
+            <h1>Enhanced IPBA Algorithm</h1>
             <p class="subtitle">Solve linearly constrained optimization problems with custom parameters</p>
         </header>
 
@@ -288,6 +290,17 @@
                 <button id="update-variables" class="btn-secondary" style="margin-top: 10px;">Update Variables</button>
             </div>
             
+            <div class="input-group">
+                <label for="num-constraints">Number of Constraints</label>
+                <input type="number" id="num-constraints" min="1" max="20" value="4">
+                <button id="update-constraints" class="btn-secondary" style="margin-top: 10px;">Update Constraints</button>
+            </div>
+            
+            <div class="input-group">
+                <label for="num-solutions">Number of Solutions to Generate</label>
+                <input type="number" id="num-solutions" min="1" max="20" value="5">
+            </div>
+            
             <h3>Objective Function Coefficients</h3>
             <div id="objective-coeffs">
                 <div class="input-group">
@@ -302,29 +315,30 @@
             
             <h3>Constraints</h3>
             <div id="constraints">
-                <div class="constraint-row">
-                    <input type="number" class="coefficient-input" placeholder="Value">
-                    <span class="variable-label">x₁</span>
-                    <span>+</span>
-                    <input type="number" class="coefficient-input" placeholder="Value">
-                    <span class="variable-label">x₂</span>
-                    <select class="operator-select">
-                        <option value="<=">≤</option>
-                        <option value="=" selected>=</option>
-                        <option value=">=">≥</option>
-                    </select>
-                    <input type="number" class="rhs-input" placeholder="RHS">
+                <!-- Constraints will be dynamically generated here -->
+            </div>
+            
+            <h3>Support Points</h3>
+            <div class="input-group">
+                <label for="num-support-points">Number of Support Points (N)</label>
+                <select id="num-support-points">
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8" selected>8</option>
+                </select>
+                <div id="support-points-range" class="calculation" style="margin-top: 10px;">
+                    For n=2, the number of support points must be between 6 and 8.
                 </div>
             </div>
             
-            <div class="add-remove-buttons">
-                <button id="add-constraint" class="btn-success">Add Constraint</button>
-                <button id="remove-constraint" class="btn-danger">Remove Constraint</button>
+            <div id="support-points-container">
+                <!-- Support points inputs will be generated here -->
             </div>
             
             <div style="margin-top: 20px;">
                 <button id="run-algorithm" class="btn-primary">Run IPBA Algorithm</button>
-                <button id="reset" class="btn-secondary">Reset to Example</button>
+                <button id="clear-all" class="btn-danger">Clear All Fields</button>
+                <!-- <button id="load-example" class="btn-success">Load Example</button> -->
             </div>
         </div>
 
@@ -407,6 +421,17 @@
                     </div>
                     
                     <div id="step-7" class="step-content">
+                        <h3>Step 7: Second Movement (if needed)</h3>
+                        <p>If termination condition is not met, perform a second movement.</p>
+                        <div class="calculation" id="second-movement-calculation">
+                            <!-- Calculation details will appear here -->
+                        </div>
+                        <div id="second-movement-result">
+                            <!-- Result will be inserted here -->
+                        </div>
+                    </div>
+                    
+                    <div id="step-8" class="step-content">
                         <h3>Final Result</h3>
                         <div id="final-result">
                             <!-- Final result will be inserted here -->
@@ -436,17 +461,19 @@
     <script>
         // Global variables to store algorithm state
         let currentStep = 1;
-        const totalSteps = 7;
+        const totalSteps = 8;
         let supportPoints = [];
         let startingPoint = [];
         let directionVector = [];
         let normalizedDirection = [];
         let stepLength = 0;
         let newPoint = [];
+        let secondMovementPoint = [];
         let objectiveValues = {};
         let solutions = [];
         let numVariables = 2;
-        let numConstraints = 1;
+        let numConstraints = 4;
+        let constraintForStepLength = 0;
 
         // DOM elements
         const stepContents = document.querySelectorAll('.step-content');
@@ -454,10 +481,14 @@
         const prevButton = document.getElementById('step-prev');
         const nextButton = document.getElementById('step-next');
         const runButton = document.getElementById('run-algorithm');
-        const resetButton = document.getElementById('reset');
+        const clearButton = document.getElementById('clear-all');
+       // const loadExampleButton = document.getElementById('load-example');
         const updateVariablesBtn = document.getElementById('update-variables');
-        const addConstraintBtn = document.getElementById('add-constraint');
-        const removeConstraintBtn = document.getElementById('remove-constraint');
+        const updateConstraintsBtn = document.getElementById('update-constraints');
+        const numSupportPointsSelect = document.getElementById('num-support-points');
+        const supportPointsContainer = document.getElementById('support-points-container');
+        const supportPointsRange = document.getElementById('support-points-range');
+        const constraintsContainer = document.getElementById('constraints');
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
@@ -465,13 +496,15 @@
             prevButton.addEventListener('click', goToPrevStep);
             nextButton.addEventListener('click', goToNextStep);
             runButton.addEventListener('click', runAlgorithm);
-            resetButton.addEventListener('click', resetToExample);
+            clearButton.addEventListener('click', clearAllFields);
+            //loadExampleButton.addEventListener('click', loadExample);
             updateVariablesBtn.addEventListener('click', updateVariableInputs);
-            addConstraintBtn.addEventListener('click', addConstraint);
-            removeConstraintBtn.addEventListener('click', removeConstraint);
+            updateConstraintsBtn.addEventListener('click', updateConstraintInputs);
+            numSupportPointsSelect.addEventListener('change', updateSupportPointsInputs);
             
-            // Initialize with 2 variables and 1 constraint
+            // Initialize with default values
             updateVariableInputs();
+            updateConstraintInputs();
         });
 
         function updateVariableInputs() {
@@ -489,20 +522,37 @@
                 objectiveContainer.appendChild(div);
             }
             
-            updateConstraintInputs();
+            // Update support points range and options
+            const minPoints = 2 * (numVariables + 1);
+            const maxPoints = numVariables * (numVariables + 1) + 2;
+            
+            // Update the select options
+            numSupportPointsSelect.innerHTML = '';
+            for (let i = minPoints; i <= maxPoints; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                numSupportPointsSelect.appendChild(option);
+            }
+            
+            // Set default to the minimum
+            numSupportPointsSelect.value = minPoints;
+            
+            supportPointsRange.textContent = `For n=${numVariables}, the number of support points must be between ${minPoints} and ${maxPoints}.`;
+            
+            updateSupportPointsInputs();
         }
 
         function updateConstraintInputs() {
-            const constraintsContainer = document.getElementById('constraints');
+            numConstraints = parseInt(document.getElementById('num-constraints').value) || 4;
             constraintsContainer.innerHTML = '';
             
             for (let i = 0; i < numConstraints; i++) {
-                addConstraintRow();
+                addConstraintRow(i);
             }
         }
 
-        function addConstraintRow() {
-            const constraintsContainer = document.getElementById('constraints');
+        function addConstraintRow(index) {
             const constraintRow = document.createElement('div');
             constraintRow.className = 'constraint-row';
             
@@ -512,35 +562,60 @@
                     constraintHTML += `<span>+</span>`;
                 }
                 constraintHTML += `
-                    <input type="number" class="coefficient-input" placeholder="Value">
+                    <input type="number" class="coefficient-input" placeholder="Value" id="a${index+1}${j}">
                     <span class="variable-label">x${j}</span>
                 `;
             }
             
             constraintHTML += `
-                <select class="operator-select">
+                <select class="operator-select" id="op${index+1}">
                     <option value="<=">≤</option>
                     <option value="=" selected>=</option>
                     <option value=">=">≥</option>
                 </select>
-                <input type="number" class="rhs-input" placeholder="RHS">
+                <input type="number" class="rhs-input" placeholder="RHS" id="b${index+1}">
             `;
             
             constraintRow.innerHTML = constraintHTML;
             constraintsContainer.appendChild(constraintRow);
         }
 
-        function addConstraint() {
-            numConstraints++;
-            addConstraintRow();
-        }
-
-        function removeConstraint() {
-            if (numConstraints > 1) {
-                numConstraints--;
-                const constraintsContainer = document.getElementById('constraints');
-                constraintsContainer.removeChild(constraintsContainer.lastChild);
+        function updateSupportPointsInputs() {
+            const numPoints = parseInt(numSupportPointsSelect.value) || 6;
+            const minPoints = 2 * (numVariables + 1);
+            const maxPoints = numVariables * (numVariables + 1) + 2;
+            
+            // Validate input
+            if (numPoints < minPoints) numSupportPointsSelect.value = minPoints;
+            if (numPoints > maxPoints) numSupportPointsSelect.value = maxPoints;
+            
+            supportPointsContainer.innerHTML = '';
+            
+            // Create table for support points
+            const table = document.createElement('table');
+            
+            // Create header row
+            let headerRow = '<tr><th>Point</th><th>x₀</th>';
+            for (let i = 1; i <= numVariables; i++) {
+                headerRow += `<th>x${i}</th>`;
             }
+            headerRow += '</tr>';
+            table.innerHTML = headerRow;
+            
+            // Create data rows
+            for (let i = 0; i < numPoints; i++) {
+                let row = `<tr><td>${i+1}</td>`;
+                row += `<td><input type="number" class="support-point-input" value="1" readonly></td>`;
+                
+                for (let j = 1; j <= numVariables; j++) {
+                    row += `<td><input type="number" class="support-point-input" placeholder="Value" value="${Math.floor(Math.random() * 10) + 1}"></td>`;
+                }
+                
+                row += '</tr>';
+                table.innerHTML += row;
+            }
+            
+            supportPointsContainer.appendChild(table);
         }
 
         function goToPrevStep() {
@@ -583,7 +658,8 @@
                 "Step 4: Optimal Step Length",
                 "Step 5: First Movement",
                 "Step 6: Termination Check",
-                "Step 7: Final Result"
+                "Step 7: Second Movement",
+                "Step 8: Final Result"
             ];
             stepIndicator.textContent = stepTitles[currentStep - 1];
         }
@@ -600,6 +676,7 @@
             
             // Get problem parameters
             const problemType = document.getElementById('problem-type').value;
+            const numSolutions = parseInt(document.getElementById('num-solutions').value) || 5;
             
             // Get objective coefficients
             const c = [];
@@ -614,42 +691,55 @@
             
             // Get constraints
             const constraints = [];
-            const constraintElements = document.querySelectorAll('#constraints .constraint-row');
             
-            for (let i = 0; i < constraintElements.length; i++) {
-                const element = constraintElements[i];
-                const coeffInputs = element.querySelectorAll('input.coefficient-input');
-                const select = element.querySelector('select');
-                const rhsInput = element.querySelector('input.rhs-input');
-                
+            for (let i = 1; i <= numConstraints; i++) {
                 const coefficients = [];
-                for (let j = 0; j < coeffInputs.length; j++) {
-                    const value = parseFloat(coeffInputs[j].value);
+                for (let j = 1; j <= numVariables; j++) {
+                    const value = parseFloat(document.getElementById(`a${i}${j}`).value);
                     if (isNaN(value)) {
-                        showError(`Please enter a valid coefficient in constraint ${i+1}`);
+                        showError(`Please enter a valid coefficient in constraint ${i} for x${j}`);
                         return;
                     }
                     coefficients.push(value);
                 }
                 
-                const rhs = parseFloat(rhsInput.value);
+                const operator = document.getElementById(`op${i}`).value;
+                const rhs = parseFloat(document.getElementById(`b${i}`).value);
                 if (isNaN(rhs)) {
-                    showError(`Please enter a valid right-hand side value in constraint ${i+1}`);
+                    showError(`Please enter a valid right-hand side value in constraint ${i}`);
                     return;
                 }
                 
                 constraints.push({
                     coefficients: coefficients,
-                    operator: select.value,
+                    operator: operator,
                     rhs: rhs
                 });
             }
             
-            // Generate support points based on constraints
-            supportPoints = generateSupportPoints(numVariables, constraints);
+            // Get support points
+            supportPoints = [];
+            const supportPointInputs = document.querySelectorAll('.support-point-input');
+            const numPoints = parseInt(numSupportPointsSelect.value);
+            
+            for (let i = 0; i < numPoints; i++) {
+                const point = [1]; // x0 is always 1
+                const startIndex = i * (numVariables + 1) + 1; // Skip the first column (x0)
+                
+                for (let j = 0; j < numVariables; j++) {
+                    const value = parseFloat(supportPointInputs[startIndex + j].value);
+                    if (isNaN(value)) {
+                        showError(`Please enter a valid value for support point ${i+1}, x${j+1}`);
+                        return;
+                    }
+                    point.push(value);
+                }
+                
+                supportPoints.push(point);
+            }
             
             // Run the algorithm
-            executeAlgorithmSteps(numVariables, constraints.length, c, constraints, problemType);
+            executeAlgorithmSteps(numVariables, constraints.length, c, constraints, problemType, numSolutions);
         }
 
         function showError(message) {
@@ -669,37 +759,7 @@
             }, 5000);
         }
 
-        function generateSupportPoints(n, constraints) {
-            // This is a simplified version for demonstration
-            // In a real implementation, this would generate points that satisfy the constraints
-            
-            const points = [];
-            
-            // For 2 variables, generate some reasonable points
-            if (n === 2) {
-                points.push([1, 10, 7]);
-                points.push([1, 8, 8]);
-                points.push([1, 7, 4]);
-                points.push([1, 6, 8]);
-                points.push([1, 5, 7]);
-                points.push([1, 9, 4]);
-                points.push([1, 4, 6]);
-                points.push([1, 11, 3]);
-            } else {
-                // For more variables, generate some dummy points
-                for (let i = 0; i < 8; i++) {
-                    const point = [1]; // x0 is always 1
-                    for (let j = 1; j <= n; j++) {
-                        point.push(Math.floor(Math.random() * 10) + 1);
-                    }
-                    points.push(point);
-                }
-            }
-            
-            return points;
-        }
-
-        function executeAlgorithmSteps(n, m, c, constraints, problemType) {
+        function executeAlgorithmSteps(n, m, c, constraints, problemType, numSolutions) {
             // Step 1: Initial Design Matrix
             displayInitialDesignMatrix(n);
             
@@ -716,13 +776,26 @@
             calculateFirstMovement(n);
             
             // Step 6: Termination Check
-            checkTermination(c, n);
+            const shouldContinue = checkTermination(c, n);
             
-            // Step 7: Final Result
+            // Step 7: Second Movement if needed
+            if (shouldContinue) {
+                calculateSecondMovement(constraints, n);
+            } else {
+                // Skip to final result if terminated
+                currentStep = 8;
+                stepContents[6].classList.remove('active');
+                stepContents[7].classList.add('active');
+                updateStepIndicator();
+                prevButton.disabled = false;
+                nextButton.disabled = true;
+            }
+            
+            // Step 8: Final Result
             displayFinalResult(c, problemType, n);
             
             // Generate solutions
-            generateSolutions(c, problemType);
+            generateSolutions(c, problemType, numSolutions);
         }
 
         function displayInitialDesignMatrix(n) {
@@ -754,7 +827,8 @@
             
             document.getElementById('initial-design-calculation').textContent = 
                 `We have chosen ${supportPoints.length} support points that satisfy all constraints. 
-                For n=${n}, we need between ${minPoints} and ${maxPoints} points.`;
+                For n=${n}, we need between ${minPoints} and ${maxPoints} points. 
+                We are using ${supportPoints.length} support points for this problem.`;
         }
 
         function calculateStartingPoint(n) {
@@ -875,11 +949,16 @@
             }
             
             // For maximization, choose the maximum rho; for minimization, choose the minimum
+            let optimalRho;
             if (problemType === 'max') {
-                stepLength = Math.max(...stepLengths.map(item => item.rho));
+                optimalRho = Math.max(...stepLengths.map(item => item.rho));
+                constraintForStepLength = stepLengths.findIndex(item => item.rho === optimalRho) + 1;
             } else {
-                stepLength = Math.min(...stepLengths.map(item => item.rho));
+                optimalRho = Math.min(...stepLengths.map(item => item.rho));
+                constraintForStepLength = stepLengths.findIndex(item => item.rho === optimalRho) + 1;
             }
+            
+            stepLength = optimalRho;
             
             // Display calculation details
             let calculationText = `For each constraint, calculate ρ* = (A_i x_1* - b_i) / (A_i d*):\n\n`;
@@ -888,13 +967,14 @@
                 calculationText += `Constraint ${item.constraint}: ρ_${item.constraint}* = (${item.Ax.toFixed(4)} - ${constraints[item.constraint-1].rhs}) / ${item.Ad.toFixed(6)} = ${item.rho.toFixed(6)}\n`;
             }
             
-            calculationText += `\nFor ${problemType === 'max' ? 'maximization' : 'minimization'}, choose ${problemType === 'max' ? 'max' : 'min'} ρ* = ${stepLength.toFixed(6)}`;
+            calculationText += `\nFor ${problemType === 'max' ? 'maximization' : 'minimization'}, choose ${problemType === 'max' ? 'max' : 'min'} ρ* = ${stepLength.toFixed(6)} (from constraint ${constraintForStepLength})`;
             
             document.getElementById('step-length-calculation').textContent = calculationText;
             
             // Display result
             document.getElementById('step-length-result').innerHTML = `
                 <p class="result">Optimal step length: ρ* = ${stepLength.toFixed(6)}</p>
+                <p class="result">This value comes from constraint ${constraintForStepLength}</p>
             `;
         }
 
@@ -962,7 +1042,7 @@
             calculationText += `f(x_2*) = ${f_x2Formula} = ${f_x2.toFixed(6)}\n\n`;
             calculationText += `|f(x_2*) - f(x_1*)| = |${f_x2.toFixed(6)} - ${f_x1.toFixed(6)}| = ${objectiveValues.difference.toFixed(6)}\n\n`;
             calculationText += `Compare with ε = ${epsilon}: ${objectiveValues.difference.toFixed(6)} ${shouldTerminate ? '<' : '>'} ${epsilon}\n`;
-            calculationText += `Algorithm ${shouldTerminate ? 'should terminate' : 'should continue'}`;
+            // calculationText += `Algorithm ${shouldTerminate ? 'should terminate' : 'should continue'}`;
             
             document.getElementById('termination-calculation').textContent = calculationText;
             
@@ -973,6 +1053,58 @@
                 <p class="result">Difference = ${objectiveValues.difference.toFixed(6)}</p>
                 <p class="result">Algorithm ${shouldTerminate ? 'terminates' : 'continues to next iteration'}</p>
             `;
+            
+            return !shouldTerminate;
+        }
+
+        function calculateSecondMovement(constraints, n) {
+            // Use the constraint that gave the optimum step length in step 3
+            const constraint = constraints[constraintForStepLength - 1];
+            
+            // Calculate A_i d*
+            let Ad = 0;
+            for (let j = 0; j < n; j++) {
+                Ad += constraint.coefficients[j] * normalizedDirection[j];
+            }
+            
+            // Calculate A_i x_2*
+            let Ax = 0;
+            for (let j = 0; j < n; j++) {
+                Ax += constraint.coefficients[j] * newPoint[j];
+            }
+            
+            // Calculate new step length ρ₂* = (A_i x_2* - b_i) / (A_i d*)
+            const rho2 = (Ax - constraint.rhs) / Ad;
+            
+            // Calculate second movement point: x_3* = x_2* - ρ₂*d*
+            secondMovementPoint = [];
+            for (let i = 0; i < newPoint.length; i++) {
+                secondMovementPoint.push(newPoint[i] - rho2 * normalizedDirection[i]);
+            }
+            
+            // Display calculation details
+            let calculationText = `\n`;
+            calculationText += `Using constraint ${constraintForStepLength} that gave the optimum step length in step 3:\n\n`;
+            
+            calculationText += `Calculate new step length ρ₂* = (A_i x_2* - b_i) / (A_i d*)\n`;
+            calculationText += `= (${Ax.toFixed(6)} - ${constraint.rhs}) / ${Ad.toFixed(6)}\n`;
+            calculationText += `= ${rho2.toFixed(6)}\n\n`;
+            
+            calculationText += `Make a move to the new point:\n`;
+            calculationText += `x_3* = x_2* - ρ₂*d*\n`;
+            calculationText += `= [${newPoint.map(v => v.toFixed(6)).join(', ')}] - ${rho2.toFixed(6)} * [${normalizedDirection.map(v => v.toFixed(6)).join(', ')}]\n`;
+            calculationText += `= [${secondMovementPoint.map(v => v.toFixed(6)).join(', ')}]`;
+            
+            document.getElementById('second-movement-calculation').textContent = calculationText;
+            
+            // Display result
+            document.getElementById('second-movement-result').innerHTML = `
+                <p class="result">New step length: ρ₂* = ${rho2.toFixed(6)}</p>
+                <p class="result">Second movement point: x_3* = [${secondMovementPoint.map(v => v.toFixed(4)).join(', ')}]</p>
+            `;
+            
+            // Update newPoint to be the second movement point for final result
+            newPoint = secondMovementPoint;
         }
 
         function displayFinalResult(c, problemType, n) {
@@ -985,7 +1117,7 @@
                 <div class="result">
                     <h3>Optimal Solution Found</h3>
                     ${newPoint.map((val, idx) => `<p>x${idx+1}* = ${val.toFixed(4)}</p>`).join('')}
-                    <p>Optimal ${problemType === 'max' ? 'Maximum' : 'Minimum'} Value = ${f_x2.toFixed(4)}</p>
+                    <p>Optimal ${problemType === 'max' ? 'Maximum' : 'Minimum'} Objective Function Value = ${f_x2.toFixed(4)}</p>
                 </div>
                 
                 <div>
@@ -995,26 +1127,30 @@
             `;
         }
 
-        function generateSolutions(c, problemType) {
+        function generateSolutions(c, problemType, numSolutions) {
             solutions = [];
             
             // Solution 1: The calculated solution
             solutions.push({
                 values: newPoint,
-                objective: objectiveValues.f_x2
+                objective: calculateObjectiveValue(c, newPoint)
             });
             
-            // Solution 2: Rounded solution
-            const roundedSolution = newPoint.map(v => Math.round(v));
-            let roundedObjective = 0;
-            for (let i = 0; i < roundedSolution.length; i++) {
-                roundedObjective += c[i] * roundedSolution[i];
+            // Generate additional solutions with small variations
+            for (let i = 1; i < numSolutions; i++) {
+                const variation = newPoint.map(v => v + (Math.random() * 2 - 1));
+                solutions.push({
+                    values: variation,
+                    objective: calculateObjectiveValue(c, variation)
+                });
             }
             
-            solutions.push({
-                values: roundedSolution,
-                objective: roundedObjective
-            });
+            // Sort solutions based on problem type
+            if (problemType === 'max') {
+                solutions.sort((a, b) => b.objective - a.objective);
+            } else {
+                solutions.sort((a, b) => a.objective - b.objective);
+            }
             
             // Display solutions
             const solutionsContainer = document.getElementById('solutions-container');
@@ -1026,9 +1162,9 @@
                 
                 let solutionText = '';
                 solution.values.forEach((value, idx) => {
-                    solutionText += `x${idx+1} = ${value}\n`;
+                    solutionText += `x${idx+1} = ${value.toFixed(4)}\n`;
                 });
-                solutionText += `Objective Value: ${solution.objective.toFixed(2)}`;
+                solutionText += `Objective Function Value: ${solution.objective.toFixed(4)}`;
                 
                 solutionCard.innerHTML = `
                     <div class="solution-header">Solution #${index + 1}</div>
@@ -1037,49 +1173,192 @@
                 
                 solutionsContainer.appendChild(solutionCard);
             });
+            
+            // Update pagination
+            const pagination = document.querySelector('.pagination');
+            pagination.innerHTML = '';
+            
+            const totalPages = Math.ceil(solutions.length / 5);
+            for (let i = 1; i <= totalPages; i++) {
+                const pageBtn = document.createElement('div');
+                pageBtn.className = 'page-btn' + (i === 1 ? ' active' : '');
+                pageBtn.textContent = i;
+                pageBtn.addEventListener('click', () => showSolutionPage(i));
+                pagination.appendChild(pageBtn);
+            }
         }
 
-        function resetToExample() {
-            // Reset to the example from the document
+        function calculateObjectiveValue(c, values) {
+            let result = 0;
+            for (let i = 0; i < c.length; i++) {
+                result += c[i] * values[i];
+            }
+            return result;
+        }
+
+        function showSolutionPage(pageNum) {
+            const solutionsContainer = document.getElementById('solutions-container');
+            solutionsContainer.innerHTML = '';
+            
+            const startIndex = (pageNum - 1) * 5;
+            const endIndex = Math.min(startIndex + 5, solutions.length);
+            
+            for (let i = startIndex; i < endIndex; i++) {
+                const solution = solutions[i];
+                const solutionCard = document.createElement('div');
+                solutionCard.className = 'solution-card';
+                
+                let solutionText = '';
+                solution.values.forEach((value, idx) => {
+                    solutionText += `x${idx+1} = ${value.toFixed(4)}\n`;
+                });
+                solutionText += `Objective Function Value: ${solution.objective.toFixed(4)}`;
+                
+                solutionCard.innerHTML = `
+                    <div class="solution-header">Solution #${i + 1}</div>
+                    <div class="solution-content">${solutionText}</div>
+                `;
+                
+                solutionsContainer.appendChild(solutionCard);
+            }
+            
+            // Update active page button
+            document.querySelectorAll('.page-btn').forEach((btn, index) => {
+                btn.classList.toggle('active', index === pageNum - 1);
+            });
+        }
+
+        function clearAllFields() {
+            // Clear problem type
             document.getElementById('problem-type').value = 'max';
+            
+            // Clear variables
             document.getElementById('num-variables').value = '2';
             numVariables = 2;
             
-            // Set objective coefficients
-            document.getElementById('c1').value = '850';
-            document.getElementById('c2').value = '350';
-            
-            // Set constraints
+            // Clear constraints
+            document.getElementById('num-constraints').value = '4';
             numConstraints = 4;
+            
+            // Clear solutions count
+            document.getElementById('num-solutions').value = '5';
+            
+            // Clear objective coefficients
+            const objectiveContainer = document.getElementById('objective-coeffs');
+            objectiveContainer.innerHTML = '';
+            
+            // Reset to 2 variables
+            updateVariableInputs();
             updateConstraintInputs();
             
-            const constraintElements = document.querySelectorAll('#constraints .constraint-row');
-            const exampleConstraints = [
-                {coefficients: [8, 5], operator: '=', rhs: 200},
-                {coefficients: [4, 1], operator: '=', rhs: 48},
-                {coefficients: [5, 4], operator: '=', rhs: 80},
-                {coefficients: [3, 5], operator: '=', rhs: 150}
-            ];
+            // Clear support points
+            updateSupportPointsInputs();
             
-            constraintElements.forEach((element, index) => {
-                if (index < exampleConstraints.length) {
-                    const constraint = exampleConstraints[index];
-                    const coeffInputs = element.querySelectorAll('input.coefficient-input');
-                    const select = element.querySelector('select');
-                    const rhsInput = element.querySelector('input.rhs-input');
-                    
-                    for (let j = 0; j < constraint.coefficients.length; j++) {
-                        coeffInputs[j].value = constraint.coefficients[j];
-                    }
-                    
-                    select.value = constraint.operator;
-                    rhsInput.value = constraint.rhs;
-                }
+            // Clear algorithm steps
+            document.getElementById('initial-design-calculation').textContent = 
+                'Enter your problem parameters and click "Run IPBA Algorithm" to see calculations.';
+            document.getElementById('initial-design-matrix').innerHTML = '';
+            document.getElementById('starting-point-calculation').textContent = '';
+            document.getElementById('starting-point-result').innerHTML = '';
+            document.getElementById('direction-calculation').textContent = '';
+            document.getElementById('direction-result').innerHTML = '';
+            document.getElementById('step-length-calculation').textContent = '';
+            document.getElementById('step-length-result').innerHTML = '';
+            document.getElementById('movement-calculation').textContent = '';
+            document.getElementById('movement-result').innerHTML = '';
+            document.getElementById('termination-calculation').textContent = '';
+            document.getElementById('termination-result').innerHTML = '';
+            document.getElementById('second-movement-calculation').textContent = '';
+            document.getElementById('second-movement-result').innerHTML = '';
+            document.getElementById('final-result').innerHTML = '';
+            
+            // Clear solutions
+            document.getElementById('solutions-container').innerHTML = `
+                <div class="solution-card">
+                    <div class="solution-header">Enter parameters and run the algorithm to see solutions</div>
+                    <div class="solution-content">Results will appear here after calculation.</div>
+                </div>
+            `;
+            
+            // Reset pagination
+            document.querySelector('.pagination').innerHTML = '<div class="page-btn active">1</div>';
+            
+            // Reset steps
+            currentStep = 1;
+            stepContents.forEach((content, index) => {
+                content.classList.toggle('active', index === 0);
             });
-            
-            // Run the algorithm with the example data
-            runAlgorithm();
+            updateStepIndicator();
+            prevButton.disabled = true;
+            nextButton.disabled = false;
         }
+
+        // function loadExample() {
+        //     // Set problem type
+        //     document.getElementById('problem-type').value = 'max';
+            
+        //     // Set variables
+        //     document.getElementById('num-variables').value = '2';
+        //     numVariables = 2;
+            
+        //     // Set constraints
+        //     document.getElementById('num-constraints').value = '4';
+        //     numConstraints = 4;
+            
+        //     // Set solutions count
+        //     document.getElementById('num-solutions').value = '5';
+            
+        //     // Update UI
+        //     updateVariableInputs();
+        //     updateConstraintInputs();
+            
+        //     // Set objective coefficients
+        //     document.getElementById('c1').value = '850';
+        //     document.getElementById('c2').value = '350';
+            
+        //     // Set constraints
+        //     document.getElementById('a11').value = '8';
+        //     document.getElementById('a12').value = '5';
+        //     document.getElementById('b1').value = '200';
+            
+        //     document.getElementById('a21').value = '4';
+        //     document.getElementById('a22').value = '1';
+        //     document.getElementById('b2').value = '48';
+            
+        //     document.getElementById('a31').value = '5';
+        //     document.getElementById('a32').value = '4';
+        //     document.getElementById('b3').value = '80';
+            
+        //     document.getElementById('a41').value = '3';
+        //     document.getElementById('a42').value = '5';
+        //     document.getElementById('b4').value = '150';
+            
+        //     // Set support points to 8
+        //     numSupportPointsSelect.value = '8';
+        //     updateSupportPointsInputs();
+            
+        //     // Set specific support points from the example
+        //     const supportPoints = [
+        //         [1, 10, 7],
+        //         [1, 8, 8],
+        //         [1, 7, 4],
+        //         [1, 6, 8],
+        //         [1, 5, 7],
+        //         [1, 9, 4],
+        //         [1, 4, 6],
+        //         [1, 11, 3]
+        //     ];
+            
+        //     const supportPointInputs = document.querySelectorAll('.support-point-input');
+        //     for (let i = 0; i < supportPoints.length; i++) {
+        //         const point = supportPoints[i];
+        //         const startIndex = i * (numVariables + 1) + 1;
+                
+        //         for (let j = 0; j < numVariables; j++) {
+        //             supportPointInputs[startIndex + j].value = point[j + 1];
+        //         }
+        //     }
+        // }
     </script>
 </body>
 </html>
