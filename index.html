@@ -4,274 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enhanced IPBA Algorithm</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background-color: #f5f7fa;
-            color: #333;
-            line-height: 1.6;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
-            background: linear-gradient(135deg, #2c3e50, #1a2530);
-            color: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        
-        h1 {
-            font-size: 2.2rem;
-            margin-bottom: 10px;
-        }
-        
-        .subtitle {
-            font-size: 1.1rem;
-            color: #ecf0f1;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        
-        .card {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 25px;
-            margin-bottom: 25px;
-        }
-        
-        .card-title {
-            font-size: 1.4rem;
-            color: #2c3e50;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #eaecef;
-        }
-        
-        .input-group {
-            margin-bottom: 15px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-        
-        input, select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
-            transition: border 0.3s;
-        }
-        
-        input:focus, select:focus {
-            border-color: #3498db;
-            outline: none;
-        }
-        
-        button {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            transition: background 0.3s;
-            margin-right: 10px;
-        }
-        
-        button:hover {
-            background: #2980b9;
-        }
-        
-        .btn-primary {
-            background: #3498db;
-        }
-        
-        .btn-secondary {
-            background: #7f8c8d;
-        }
-        
-        .btn-success {
-            background: #2ecc71;
-        }
-        
-        .btn-danger {
-            background: #e74c3c;
-        }
-        
-        .constraint-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .coefficient-input {
-            width: 80px;
-            text-align: center;
-        }
-        
-        .variable-label {
-            font-weight: 600;
-            color: #2c3e50;
-            min-width: 30px;
-        }
-        
-        .operator-select {
-            width: 80px;
-        }
-        
-        .rhs-input {
-            width: 100px;
-        }
-        
-        .step-content {
-            display: none;
-        }
-        
-        .step-content.active {
-            display: block;
-        }
-        
-        .step-nav {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 20px;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 15px 0;
-            font-size: 14px;
-        }
-        
-        table, th, td {
-            border: 1px solid #ddd;
-        }
-        
-        th, td {
-            padding: 10px;
-            text-align: center;
-        }
-        
-        th {
-            background: #f4f6f9;
-            font-weight: 600;
-        }
-        
-        .calculation {
-            background: #f8f9fa;
-            border-left: 4px solid #3498db;
-            padding: 15px;
-            margin: 15px 0;
-            font-family: monospace;
-            white-space: pre-wrap;
-            border-radius: 0 4px 4px 0;
-            font-size: 14px;
-            overflow-x: auto;
-        }
-        
-        .result {
-            font-weight: bold;
-            color: #2ecc71;
-            margin: 10px 0;
-        }
-        
-        .pagination {
-            display: flex;
-            justify-content: center;
-            margin-top: 20px;
-        }
-        
-        .page-btn {
-            margin: 0 5px;
-            padding: 8px 15px;
-            background: #eaecef;
-            color: #2c3e50;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        
-        .page-btn.active {
-            background: #3498db;
-            color: white;
-        }
-        
-        .solution-card {
-            border: 1px solid #eaecef;
-            border-radius: 6px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-        
-        .solution-header {
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-        
-        .solution-content {
-            font-family: monospace;
-            white-space: pre-wrap;
-        }
-        
-        .flex-container {
-            display: flex;
-            gap: 20px;
-        }
-        
-        .error {
-            color: #e74c3c;
-            font-weight: 600;
-            margin: 10px 0;
-        }
-        
-        .support-point-input {
-            width: 60px;
-            text-align: center;
-        }
-        
-        @media (max-width: 768px) {
-            .flex-container {
-                flex-direction: column;
-            }
-            
-            .constraint-row {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-        }
-    </style>
+   <link rel="stylesheet" href="main.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Enhanced IPBA Algorithm</h1>
-            <p class="subtitle">Solve linearly constrained optimization problems with custom parameters</p>
+            <h1>Invariant Property-based Algorithm</h1>
+            <h1>For</h1>
+            <p class="subtitle">Solving Linearly constrained optimization Problems With Linear Objective Function.</p>
+            <p class="subtitle">By Prof. Etukudo</p>
         </header>
 
         <div class="card">
@@ -296,10 +37,10 @@
                 <button id="update-constraints" class="btn-secondary" style="margin-top: 10px;">Update Constraints</button>
             </div>
             
-            <div class="input-group">
+            <!-- <div class="input-group">
                 <label for="num-solutions">Number of Solutions to Generate</label>
                 <input type="number" id="num-solutions" min="1" max="20" value="5">
-            </div>
+            </div> -->
             
             <h3>Objective Function Coefficients</h3>
             <div id="objective-coeffs">
@@ -366,7 +107,7 @@
                     <div id="step-2" class="step-content">
                         <h3>Step 2: Optimal Starting Point</h3>
                         <p>Calculate the optimal starting point using the formula:</p>
-                        <p>x₁* = Σ(uₘ* * xₘ) where uₘ* = aₘ⁻¹ / Σ(aₘ⁻¹) and aₘ = xₘ * xₘ'</p>
+                        <p>x₁* = Σ(uₘ*  x¹ₘ) where uₘ* > 0,  Σuₘ* = 1, uₘ* = aₘ⁻¹ / Σ(aₘ⁻¹) and aₘ = xₘ * xₘ' m=1,2...N</p>
                         <div class="calculation" id="starting-point-calculation">
                             <!-- Calculation details will appear here -->
                         </div>
@@ -389,7 +130,7 @@
                     <div id="step-4" class="step-content">
                         <h3>Step 4: Optimal Step Length</h3>
                         <p>Calculate the optimal step length ρ* using the formula:</p>
-                        <p>For maximization: ρ* = max{(Aᵢx₁* - bᵢ) / (Aᵢd*)}</p>
+                        <p>For maximization: ρ₁* = max{(Aᵢx₁* - bᵢ) / (Aᵢd*)}</p>
                         <div class="calculation" id="step-length-calculation">
                             <!-- Calculation details will appear here -->
                         </div>
@@ -400,7 +141,7 @@
                     
                     <div id="step-5" class="step-content">
                         <h3>Step 5: First Movement</h3>
-                        <p>Move to the new point: x₂* = x₁* - ρ*d*</p>
+                        <p>Move to the point: x₂* = x₁* - ρ₁*d*</p>
                         <div class="calculation" id="movement-calculation">
                             <!-- Calculation details will appear here -->
                         </div>
@@ -410,7 +151,7 @@
                     </div>
                     
                     <div id="step-6" class="step-content">
-                        <h3>Step 6: Termination Check</h3>
+                        <h3>Step 6: Termination Cateria</h3>
                         <p>Check if |f(x₂*) - f(x₁*)| < ε (where ε = 0.0001)</p>
                         <div class="calculation" id="termination-calculation">
                             <!-- Calculation details will appear here -->
@@ -421,7 +162,7 @@
                     </div>
                     
                     <div id="step-7" class="step-content">
-                        <h3>Step 7: Second Movement (if needed)</h3>
+                        <h3>Step 7: Second Movement </h3>
                         <p>If termination condition is not met, perform a second movement.</p>
                         <div class="calculation" id="second-movement-calculation">
                             <!-- Calculation details will appear here -->
@@ -440,7 +181,7 @@
                 </div>
             </div>
             
-            <div style="flex: 1;">
+            <!-- <div style="flex: 1;">
                 <div class="card">
                     <h2 class="card-title">Solutions</h2>
                     <div id="solutions-container">
@@ -454,7 +195,7 @@
                         <div class="page-btn active">1</div>
                     </div>
                 </div>
-            </div>
+            </div> -->
         </div>
     </div>
 
@@ -657,7 +398,7 @@
                 "Step 3: Direction of Movement",
                 "Step 4: Optimal Step Length",
                 "Step 5: First Movement",
-                "Step 6: Termination Check",
+                "Step 6: Termination Citeria",
                 "Step 7: Second Movement",
                 "Step 8: Final Result"
             ];
@@ -676,7 +417,7 @@
             
             // Get problem parameters
             const problemType = document.getElementById('problem-type').value;
-            const numSolutions = parseInt(document.getElementById('num-solutions').value) || 5;
+            // const numSolutions = parseInt(document.getElementById('num-solutions').value) || 5;
             
             // Get objective coefficients
             const c = [];
@@ -739,7 +480,7 @@
             }
             
             // Run the algorithm
-            executeAlgorithmSteps(numVariables, constraints.length, c, constraints, problemType, numSolutions);
+            executeAlgorithmSteps(numVariables, constraints.length, c, constraints, problemType);
         }
 
         function showError(message) {
@@ -759,7 +500,7 @@
             }, 5000);
         }
 
-        function executeAlgorithmSteps(n, m, c, constraints, problemType, numSolutions) {
+        function executeAlgorithmSteps(n, m, c, constraints, problemType) {
             // Step 1: Initial Design Matrix
             displayInitialDesignMatrix(n);
             
@@ -795,7 +536,7 @@
             displayFinalResult(c, problemType, n);
             
             // Generate solutions
-            generateSolutions(c, problemType, numSolutions);
+            // generateSolutions(c, problemType);
         }
 
         function displayInitialDesignMatrix(n) {
@@ -901,7 +642,7 @@
             
             // Display calculation details
             let calculationText = `Direction vector d = gradient of objective function = [${c.join(', ')}]\n\n`;
-            calculationText += `Normalize d so that d*'d* = 1:\n`;
+            calculationText += `Normalize d such that d*'d* = 1:\n`;
             
             const squaredTerms = c.map(v => `${v}²`).join(' + ');
             const squaredSum = c.reduce((sum, v) => sum + v*v, 0);
@@ -961,19 +702,19 @@
             stepLength = optimalRho;
             
             // Display calculation details
-            let calculationText = `For each constraint, calculate ρ* = (A_i x_1* - b_i) / (A_i d*):\n\n`;
+            let calculationText = `For each constraint, calculate ρ₁* = (Aᵢ x₁* - bᵢ) / (Aᵢ d*):\n\n`;
             
             for (const item of stepLengths) {
                 calculationText += `Constraint ${item.constraint}: ρ_${item.constraint}* = (${item.Ax.toFixed(4)} - ${constraints[item.constraint-1].rhs}) / ${item.Ad.toFixed(6)} = ${item.rho.toFixed(6)}\n`;
             }
             
-            calculationText += `\nFor ${problemType === 'max' ? 'maximization' : 'minimization'}, choose ${problemType === 'max' ? 'max' : 'min'} ρ* = ${stepLength.toFixed(6)} (from constraint ${constraintForStepLength})`;
+            calculationText += `\nFor ${problemType === 'max' ? 'maximization' : 'minimization'}, choose ${problemType === 'max' ? 'max' : 'min'} ρ₁* = ${stepLength.toFixed(6)} (from constraint ${constraintForStepLength})`;
             
             document.getElementById('step-length-calculation').textContent = calculationText;
             
             // Display result
             document.getElementById('step-length-result').innerHTML = `
-                <p class="result">Optimal step length: ρ* = ${stepLength.toFixed(6)}</p>
+                <p class="result">Optimal step length: ρ₁* = ${stepLength.toFixed(6)}</p>
                 <p class="result">This value comes from constraint ${constraintForStepLength}</p>
             `;
         }
@@ -986,8 +727,8 @@
             }
             
             // Display calculation details
-            let calculationText = `Make a move to the new point:\n`;
-            calculationText += `x_2* = x_1* - ρ*d*\n`;
+            let calculationText = `Make a move to the  point:\n`;
+            calculationText += `x₂* = x₁* - ρ₁*d*\n`;
             
             const startingPointDisplay = startingPoint.slice(1).map(v => v.toFixed(6));
             calculationText += `= [${startingPointDisplay.join(', ')}] - ${stepLength.toFixed(6)} * [${normalizedDirection.map(v => v.toFixed(6)).join(', ')}]\n`;
@@ -997,7 +738,7 @@
             
             // Display result
             document.getElementById('movement-result').innerHTML = `
-                <p class="result">New point: x_2* = [${newPoint.map(v => v.toFixed(4)).join(', ')}]</p>
+                <p class="result">New point: x₂* = [${newPoint.map(v => v.toFixed(4)).join(', ')}]</p>
             `;
         }
 
@@ -1024,7 +765,7 @@
             const shouldTerminate = objectiveValues.difference < epsilon;
             
             // Display calculation details
-            let calculationText = `Calculate f(x_2*) and f(x_1*):\n`;
+            let calculationText = `Calculate f(x₂*) and f(x₁*):\n`;
             
             let f_x1Formula = '';
             for (let i = 0; i < n; i++) {
@@ -1038,21 +779,21 @@
                 if (i < n - 1) f_x2Formula += ' + ';
             }
             
-            calculationText += `f(x_1*) = ${f_x1Formula} = ${f_x1.toFixed(6)}\n`;
-            calculationText += `f(x_2*) = ${f_x2Formula} = ${f_x2.toFixed(6)}\n\n`;
-            calculationText += `|f(x_2*) - f(x_1*)| = |${f_x2.toFixed(6)} - ${f_x1.toFixed(6)}| = ${objectiveValues.difference.toFixed(6)}\n\n`;
+            calculationText += `f(x₁*) = ${f_x1Formula} = ${f_x1.toFixed(6)}\n`;
+            calculationText += `f(x₂*) = ${f_x2Formula} = ${f_x2.toFixed(6)}\n\n`;
+            calculationText += `|f(x₂*) - f(x₁*)| = |${f_x2.toFixed(6)} - ${f_x1.toFixed(6)}| = ${objectiveValues.difference.toFixed(6)}\n\n`;
             calculationText += `Compare with ε = ${epsilon}: ${objectiveValues.difference.toFixed(6)} ${shouldTerminate ? '<' : '>'} ${epsilon}\n`;
             // calculationText += `Algorithm ${shouldTerminate ? 'should terminate' : 'should continue'}`;
             
             document.getElementById('termination-calculation').textContent = calculationText;
             
             // Display result
-            document.getElementById('termination-result').innerHTML = `
-                <p class="result">f(x_1*) = ${f_x1.toFixed(4)}</p>
-                <p class="result">f(x_2*) = ${f_x2.toFixed(4)}</p>
-                <p class="result">Difference = ${objectiveValues.difference.toFixed(6)}</p>
-                <p class="result">Algorithm ${shouldTerminate ? 'terminates' : 'continues to next iteration'}</p>
-            `;
+            // document.getElementById('termination-result').innerHTML = `
+            //     <p class="result">f(x_1*) = ${f_x1.toFixed(4)}</p>
+            //     <p class="result">f(x_2*) = ${f_x2.toFixed(4)}</p>
+            //     <p class="result">Difference = ${objectiveValues.difference.toFixed(6)}</p>
+            //     <p class="result">Algorithm ${shouldTerminate ? 'terminates' : 'continues to next iteration'}</p>
+            // `;
             
             return !shouldTerminate;
         }
@@ -1086,21 +827,22 @@
             let calculationText = `\n`;
             calculationText += `Using constraint ${constraintForStepLength} that gave the optimum step length in step 3:\n\n`;
             
-            calculationText += `Calculate new step length ρ₂* = (A_i x_2* - b_i) / (A_i d*)\n`;
+            calculationText += `Calculate new step length ρ₂* = (Aᵢ x₂* - bᵢ) / (Aᵢ d*)\n`;
             calculationText += `= (${Ax.toFixed(6)} - ${constraint.rhs}) / ${Ad.toFixed(6)}\n`;
             calculationText += `= ${rho2.toFixed(6)}\n\n`;
             
-            calculationText += `Make a move to the new point:\n`;
-            calculationText += `x_3* = x_2* - ρ₂*d*\n`;
-            calculationText += `= [${newPoint.map(v => v.toFixed(6)).join(', ')}] - ${rho2.toFixed(6)} * [${normalizedDirection.map(v => v.toFixed(6)).join(', ')}]\n`;
-            calculationText += `= [${secondMovementPoint.map(v => v.toFixed(6)).join(', ')}]`;
+            // calculationText += `Make a move to the new point:\n`;
+            // calculationText += `x3* = x₂* - ρ₂*d*\n`;
+            // calculationText += `= [${newPoint.map(v => v.toFixed(6)).join(', ')}] - ${rho2.toFixed(6)} * [${normalizedDirection.map(v => v.toFixed(6)).join(', ')}]\n`;
+            // calculationText += `= [${secondMovementPoint.map(v => v.toFixed(6)).join(', ')}]`;
             
             document.getElementById('second-movement-calculation').textContent = calculationText;
             
             // Display result
             document.getElementById('second-movement-result').innerHTML = `
-                <p class="result">New step length: ρ₂* = ${rho2.toFixed(6)}</p>
-                <p class="result">Second movement point: x_3* = [${secondMovementPoint.map(v => v.toFixed(4)).join(', ')}]</p>
+                <p class="result"> since the New step length: ρ₂* = ${rho2.toFixed(6)}, then the optimizer had been located in step 5.</p>
+
+              <!---   <p class="result">Second movement point: x3* = [${secondMovementPoint.map(v => v.toFixed(4)).join(', ')}]</p>-->
             `;
             
             // Update newPoint to be the second movement point for final result
@@ -1127,66 +869,66 @@
             `;
         }
 
-        function generateSolutions(c, problemType, numSolutions) {
-            solutions = [];
+        // function generateSolutions(c, problemType, numSolutions) {
+        //     solutions = [];
             
-            // Solution 1: The calculated solution
-            solutions.push({
-                values: newPoint,
-                objective: calculateObjectiveValue(c, newPoint)
-            });
+        //     // Solution 1: The calculated solution
+        //     solutions.push({
+        //         values: newPoint,
+        //         objective: calculateObjectiveValue(c, newPoint)
+        //     });
             
-            // Generate additional solutions with small variations
-            for (let i = 1; i < numSolutions; i++) {
-                const variation = newPoint.map(v => v + (Math.random() * 2 - 1));
-                solutions.push({
-                    values: variation,
-                    objective: calculateObjectiveValue(c, variation)
-                });
-            }
+        //     // Generate additional solutions with small variations
+        //     for (let i = 1; i < numSolutions; i++) {
+        //         const variation = newPoint.map(v => v + (Math.random() * 2 - 1));
+        //         solutions.push({
+        //             values: variation,
+        //             objective: calculateObjectiveValue(c, variation)
+        //         });
+        //     }
             
-            // Sort solutions based on problem type
-            if (problemType === 'max') {
-                solutions.sort((a, b) => b.objective - a.objective);
-            } else {
-                solutions.sort((a, b) => a.objective - b.objective);
-            }
+        //     // Sort solutions based on problem type
+        //     if (problemType === 'max') {
+        //         solutions.sort((a, b) => b.objective - a.objective);
+        //     } else {
+        //         solutions.sort((a, b) => a.objective - b.objective);
+        //     }
             
-            // Display solutions
-            const solutionsContainer = document.getElementById('solutions-container');
-            solutionsContainer.innerHTML = '';
+        //     // Display solutions
+        //     const solutionsContainer = document.getElementById('solutions-container');
+        //     solutionsContainer.innerHTML = '';
             
-            solutions.forEach((solution, index) => {
-                const solutionCard = document.createElement('div');
-                solutionCard.className = 'solution-card';
+        //     solutions.forEach((solution, index) => {
+        //         const solutionCard = document.createElement('div');
+        //         solutionCard.className = 'solution-card';
                 
-                let solutionText = '';
-                solution.values.forEach((value, idx) => {
-                    solutionText += `x${idx+1} = ${value.toFixed(4)}\n`;
-                });
-                solutionText += `Objective Function Value: ${solution.objective.toFixed(4)}`;
+        //         let solutionText = '';
+        //         solution.values.forEach((value, idx) => {
+        //             solutionText += `x${idx+1} = ${value.toFixed(4)}\n`;
+        //         });
+        //         solutionText += `Objective Function Value: ${solution.objective.toFixed(4)}`;
                 
-                solutionCard.innerHTML = `
-                    <div class="solution-header">Solution #${index + 1}</div>
-                    <div class="solution-content">${solutionText}</div>
-                `;
+        //         solutionCard.innerHTML = `
+        //             <div class="solution-header">Solution #${index + 1}</div>
+        //             <div class="solution-content">${solutionText}</div>
+        //         `;
                 
-                solutionsContainer.appendChild(solutionCard);
-            });
+        //         solutionsContainer.appendChild(solutionCard);
+        //     });
             
-            // Update pagination
-            const pagination = document.querySelector('.pagination');
-            pagination.innerHTML = '';
+        //     // Update pagination
+        //     const pagination = document.querySelector('.pagination');
+        //     pagination.innerHTML = '';
             
-            const totalPages = Math.ceil(solutions.length / 5);
-            for (let i = 1; i <= totalPages; i++) {
-                const pageBtn = document.createElement('div');
-                pageBtn.className = 'page-btn' + (i === 1 ? ' active' : '');
-                pageBtn.textContent = i;
-                pageBtn.addEventListener('click', () => showSolutionPage(i));
-                pagination.appendChild(pageBtn);
-            }
-        }
+        //     const totalPages = Math.ceil(solutions.length / 5);
+        //     for (let i = 1; i <= totalPages; i++) {
+        //         const pageBtn = document.createElement('div');
+        //         pageBtn.className = 'page-btn' + (i === 1 ? ' active' : '');
+        //         pageBtn.textContent = i;
+        //         pageBtn.addEventListener('click', () => showSolutionPage(i));
+        //         pagination.appendChild(pageBtn);
+        //     }
+        // }
 
         function calculateObjectiveValue(c, values) {
             let result = 0;
@@ -1196,37 +938,37 @@
             return result;
         }
 
-        function showSolutionPage(pageNum) {
-            const solutionsContainer = document.getElementById('solutions-container');
-            solutionsContainer.innerHTML = '';
+        // function showSolutionPage(pageNum) {
+        //     const solutionsContainer = document.getElementById('solutions-container');
+        //     solutionsContainer.innerHTML = '';
             
-            const startIndex = (pageNum - 1) * 5;
-            const endIndex = Math.min(startIndex + 5, solutions.length);
+        //     const startIndex = (pageNum - 1) * 5;
+        //     const endIndex = Math.min(startIndex + 5, solutions.length);
             
-            for (let i = startIndex; i < endIndex; i++) {
-                const solution = solutions[i];
-                const solutionCard = document.createElement('div');
-                solutionCard.className = 'solution-card';
+        //     for (let i = startIndex; i < endIndex; i++) {
+        //         const solution = solutions[i];
+        //         const solutionCard = document.createElement('div');
+        //         solutionCard.className = 'solution-card';
                 
-                let solutionText = '';
-                solution.values.forEach((value, idx) => {
-                    solutionText += `x${idx+1} = ${value.toFixed(4)}\n`;
-                });
-                solutionText += `Objective Function Value: ${solution.objective.toFixed(4)}`;
+        //         let solutionText = '';
+        //         solution.values.forEach((value, idx) => {
+        //             solutionText += `x${idx+1} = ${value.toFixed(4)}\n`;
+        //         });
+        //         solutionText += `Objective Function Value: ${solution.objective.toFixed(4)}`;
                 
-                solutionCard.innerHTML = `
-                    <div class="solution-header">Solution #${i + 1}</div>
-                    <div class="solution-content">${solutionText}</div>
-                `;
+        //         solutionCard.innerHTML = `
+        //             <div class="solution-header">Solution #${i + 1}</div>
+        //             <div class="solution-content">${solutionText}</div>
+        //         `;
                 
-                solutionsContainer.appendChild(solutionCard);
-            }
+        //         solutionsContainer.appendChild(solutionCard);
+        //     }
             
-            // Update active page button
-            document.querySelectorAll('.page-btn').forEach((btn, index) => {
-                btn.classList.toggle('active', index === pageNum - 1);
-            });
-        }
+        //     // Update active page button
+        //     document.querySelectorAll('.page-btn').forEach((btn, index) => {
+        //         btn.classList.toggle('active', index === pageNum - 1);
+        //     });
+        // }
 
         function clearAllFields() {
             // Clear problem type
@@ -1273,12 +1015,12 @@
             document.getElementById('final-result').innerHTML = '';
             
             // Clear solutions
-            document.getElementById('solutions-container').innerHTML = `
-                <div class="solution-card">
-                    <div class="solution-header">Enter parameters and run the algorithm to see solutions</div>
-                    <div class="solution-content">Results will appear here after calculation.</div>
-                </div>
-            `;
+            // document.getElementById('solutions-container').innerHTML = `
+            //     <div class="solution-card">
+            //         <div class="solution-header">Enter parameters and run the algorithm to see solutions</div>
+            //         <div class="solution-content">Results will appear here after calculation.</div>
+            //     </div>
+            // `;
             
             // Reset pagination
             document.querySelector('.pagination').innerHTML = '<div class="page-btn active">1</div>';
