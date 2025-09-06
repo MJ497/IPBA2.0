@@ -12,7 +12,7 @@
             <h1>Invariant Property-based Algorithm</h1>
             <h1>For</h1>
             <p class="subtitle">Solving Linearly constrained optimization Problems With Linear Objective Function.</p>
-            <p class="subtitle">By Prof. Etukudo</p>
+            <p class="subtitle">By Prof. Idorenyen Etukudo</p>
         </header>
 
         <div class="card">
@@ -105,7 +105,7 @@
                     <div id="step-2" class="step-content">
                         <h3>Step 2: Optimal Starting Point</h3>
                         <p>Calculate the optimal starting point using the formula:</p>
-                        <p>x₁* = Σ(uₘ*  x¹ₘ) where uₘ* > 0,  Σuₘ* = 1, uₘ* = aₘ⁻¹ / Σ(aₘ⁻¹) and aₘ = xₘ * xₘ' m=1,2...N</p>
+                        <p>x₁* = Σ(uₘ*  x¹ₘ) where uₘ* > 0,  Σuₘ* = 1, uₘ* = aₘ⁻¹ / Σ(aₘ⁻¹) and aₘ = xₘ * xₘ', m=1,2...N</p>
                         <div class="calculation" id="starting-point-calculation">
                             <!-- Calculation details will appear here -->
                         </div>
@@ -735,25 +735,25 @@
             }
             
             // Display calculation details
-            let calculationText = `Calculate a_m = x_m * x_m' for each point:\n`;
+            let calculationText = `Calculate aₘ = xₘ * xₘ' for each point:\n`;
             for (let i = 0; i < supportPoints.length; i++) {
-                calculationText += `a_${i+1} = [${supportPoints[i].join(', ')}] * [${supportPoints[i].join(', ')}]' = ${a[i].toFixed(4)}\n`;
+                calculationText += `a${i+1} = [${supportPoints[i].join(', ')}] * [${supportPoints[i].join(', ')}]' = ${a[i].toFixed(4)}\n`;
             }
             
-            calculationText += `\nCalculate a_m^{-1}:\n`;
+            calculationText += `\nCalculate aₘ^{-1}:\n`;
             for (let i = 0; i < supportPoints.length; i++) {
-                calculationText += `a_${i+1}^{-1} = ${aInverse[i].toFixed(6)}\n`;
+                calculationText += `a${i+1}^{-1} = ${aInverse[i].toFixed(6)}\n`;
             }
             
-            calculationText += `\nSum of a_m^{-1} = ${sumAInverse.toFixed(6)}\n\n`;
+            calculationText += `\nSum of aₘ^{-1} = ${sumAInverse.toFixed(6)}\n\n`;
             
-            calculationText += `Calculate u_m* = a_m^{-1} / sum(a_m^{-1}):\n`;
+            calculationText += `Calculate uₘ* = aₘ^{-1} / sum(aₘ^{-1}):\n`;
             for (let i = 0; i < supportPoints.length; i++) {
-                calculationText += `u_${i+1}* = ${aInverse[i].toFixed(6)} / ${sumAInverse.toFixed(6)} = ${uStar[i].toFixed(6)}\n`;
+                calculationText += `u${i+1}* = ${aInverse[i].toFixed(6)} / ${sumAInverse.toFixed(6)} = ${uStar[i].toFixed(6)}\n`;
             }
             
-            calculationText += `\nCalculate optimal starting point x_1* = Σ(u_m* * x_m):\n`;
-            calculationText += `x_1* = \n`;
+            calculationText += `\nCalculate optimal starting point x₁* = Σ(u_m* * x_m):\n`;
+            calculationText += `x₁* = \n`;
             for (let i = 0; i < supportPoints.length; i++) {
                 calculationText += `${uStar[i].toFixed(6)} * [${supportPoints[i].join(', ')}]${i < supportPoints.length - 1 ? ' +' : ''}\n`;
             }
@@ -843,7 +843,7 @@
             let calculationText = `For each constraint, calculate ρ₁* = (Aᵢ x₁* - bᵢ) / (Aᵢ d*):\n\n`;
             
             for (const item of stepLengths) {
-                calculationText += `Constraint ${item.constraint}: ρ_${item.constraint}* = (${item.Ax.toFixed(4)} - ${constraints[item.constraint-1].rhs}) / ${item.Ad.toFixed(6)} = ${item.rho.toFixed(6)}\n`;
+                calculationText += `Constraint ${item.constraint}: ρ${item.constraint}* = (${item.Ax.toFixed(4)} - ${constraints[item.constraint-1].rhs}) / ${item.Ad.toFixed(6)} = ${item.rho.toFixed(6)}\n`;
             }
             
             calculationText += `\nFor ${problemType === 'max' ? 'maximization' : 'minimization'}, choose ${problemType === 'max' ? 'max' : 'min'} ρ₁* = ${stepLength.toFixed(6)} (from constraint ${constraintForStepLength})`;
@@ -984,23 +984,6 @@
             newPoint = secondMovementPoint;
         }
 
-        function displayFinalResult(c, problemType, n) {
-            let f_x2 = 0;
-            for (let i = 0; i < newPoint.length; i++) {
-                f_x2 += c[i] * newPoint[i];
-            }
-            
-            document.getElementById('final-result').innerHTML = `
-                <div class="result">
-                    <h3>Optimal Solution Found</h3>
-                    ${newPoint.map((val, idx) => `<p>x${idx+1}* = ${val.toFixed(4)}</p>`).join('')}
-                    <p>Optimal ${problemType === 'max' ? 'Maximum' : 'Minimum'} Objective Function Value = ${f_x2.toFixed(4)}</p>
-                </div>
-                
-               
-            `;
-        }
-
         function clearAllFields() {
             // Clear problem type
             document.getElementById('problem-type').value = 'max';
@@ -1051,6 +1034,9 @@
             prevButton.disabled = true;
             nextButton.disabled = false;
         }
+
+        
     </script>
+    <script src="main.js" defer></script>
 </body>
 </html>
