@@ -1,5 +1,5 @@
 // ----- Improved displayFinalResult + overlay helpers (replace your existing displayFinalResult) -----
-function displayFinalResult(c, problemType, n) {
+function displayFinalResult(c) {
     let f_x2 = 0;
     for (let i = 0; i < newPoint.length; i++) {
         f_x2 += c[i] * newPoint[i];
@@ -9,7 +9,7 @@ function displayFinalResult(c, problemType, n) {
         <div class="result">
             <h3>Optimal Solution Found</h3>
             ${newPoint.map((val, idx) => `<p>x${idx+1}* = ${val.toFixed(6)}</p>`).join('')}
-            <p>Optimal ${problemType === 'max'} Objective Function Value = ${f_x2.toFixed(6)}</p>
+            <p>Optimal  Objective Function Value = ${f_x2.toFixed(6)}</p>
         </div>
         <div style="margin-top:12px;">
         
