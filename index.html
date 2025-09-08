@@ -12,7 +12,7 @@
             <h1>Invariant Property-based Algorithm</h1>
             <h1>For</h1>
             <p class="subtitle">Solving Linearly constrained optimization Problems With Linear Objective Function.</p>
-            <p class="subtitle">By Prof. Idorenyen Etukudo</p>
+            <p class="subtitle">By Prof. Idorenyin Etukudo</p>
         </header>
 
         <div class="card">
@@ -161,7 +161,7 @@
                     
                     <div id="step-7" class="step-content">
                         <h3>Step 7: Second Movement </h3>
-                        <p>If termination condition is not met, perform a second movement.</p>
+                      
                         <div class="calculation" id="second-movement-calculation">
                             <!-- Calculation details will appear here -->
                         </div>
@@ -920,17 +920,17 @@
             calculationText += `f(x₁*) = ${f_x1Formula} = ${f_x1.toFixed(6)}\n`;
             calculationText += `f(x₂*) = ${f_x2Formula} = ${f_x2.toFixed(6)}\n\n`;
             calculationText += `|f(x₂*) - f(x₁*)| = |${f_x2.toFixed(6)} - ${f_x1.toFixed(6)}| = ${objectiveValues.difference.toFixed(6)}\n\n`;
-            calculationText += `Compare with ε = ${epsilon}: ${objectiveValues.difference.toFixed(6)} ${shouldTerminate ? '<' : '>'} ${epsilon}\n`;
+            calculationText += `since |f(x₂*) - f(x₁*)| = ${objectiveValues.difference.toFixed(6)}  ${shouldTerminate ? '<' : '>'} ε = ${epsilon}\n we make a second move`;
             
             document.getElementById('termination-calculation').textContent = calculationText;
             
             // Display result
-            document.getElementById('termination-result').innerHTML = `
-                <p class="result">f(x_1*) = ${f_x1.toFixed(4)}</p>
-                <p class="result">f(x_2*) = ${f_x2.toFixed(4)}</p>
-                <p class="result">Difference = ${objectiveValues.difference.toFixed(6)}</p>
-                <p class="result">Algorithm ${shouldTerminate ? 'terminates' : 'continues to next iteration'}</p>
-            `;
+            // document.getElementById('termination-result').innerHTML = `
+            //     <p class="result">f(x_1*) = ${f_x1.toFixed(4)}</p>
+            //     <p class="result">f(x_2*) = ${f_x2.toFixed(4)}</p>
+            //     <p class="result">Difference = ${objectiveValues.difference.toFixed(6)}</p>
+            //     <p class="result">Algorithm ${shouldTerminate ? 'terminates' : 'continues to next iteration'}</p>
+            // `;
             
             return !shouldTerminate;
         }
@@ -967,18 +967,19 @@
             calculationText += `= (${Ax.toFixed(6)} - ${constraint.rhs}) / ${Ad.toFixed(6)}\n`;
             calculationText += `= ${rho2.toFixed(6)}\n\n`;
             
-            calculationText += `Make a move to the new point:\n`;
-            calculationText += `x3* = x₂* - ρ₂*d*\n`;
-            calculationText += `= [${newPoint.map(v => v.toFixed(6)).join(', ')}] - ${rho2.toFixed(6)} * [${normalizedDirection.map(v => v.toFixed(6)).join(', ')}]\n`;
-            calculationText += `= [${secondMovementPoint.map(v => v.toFixed(6)).join(', ')}]`;
+             calculationText += ` Since ρ₂ = ${rho2.toFixed(6)} the optimizer has been obtained in step 5.\n\n`;
+            // calculationText += `Make a move to the new point:\n`;
+            // calculationText += `x3* = x₂* - ρ₂*d*\n`;
+            // calculationText += `= [${newPoint.map(v => v.toFixed(6)).join(', ')}] - ${rho2.toFixed(6)} * [${normalizedDirection.map(v => v.toFixed(6)).join(', ')}]\n`;
+            // calculationText += `= [${secondMovementPoint.map(v => v.toFixed(6)).join(', ')}]`;
             
             document.getElementById('second-movement-calculation').textContent = calculationText;
             
-            // Display result
-            document.getElementById('second-movement-result').innerHTML = `
-                <p class="result">New step length: ρ₂* = ${rho2.toFixed(6)}</p>
-                <p class="result">Second movement point: x3* = [${secondMovementPoint.map(v => v.toFixed(4)).join(', ')}]</p>
-            `;
+            // // Display result
+            // document.getElementById('second-movement-result').innerHTML = `
+            //     <p class="result">New step length: ρ₂* = ${rho2.toFixed(6)}</p>
+            //     <p class="result">Second movement point: x3* = [${secondMovementPoint.map(v => v.toFixed(4)).join(', ')}]</p>
+            // `;
             
             // Update newPoint to be the second movement point for final result
             newPoint = secondMovementPoint;
