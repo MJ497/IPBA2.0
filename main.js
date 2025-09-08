@@ -9,7 +9,7 @@ function displayFinalResult(c, problemType, n) {
         <div class="result">
             <h3>Optimal Solution Found</h3>
             ${newPoint.map((val, idx) => `<p>x${idx+1}* = ${val.toFixed(6)}</p>`).join('')}
-            <p>Optimal ${problemType === 'max' ? 'Maximum' : 'Minimum'} Objective Function Value = ${f_x2.toFixed(6)}</p>
+            <p>Optimal ${problemType === 'max'} Objective Function Value = ${f_x2.toFixed(6)}</p>
         </div>
         <div style="margin-top:12px;">
         
