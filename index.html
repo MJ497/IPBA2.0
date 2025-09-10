@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enhanced IPBA Algorithm</title>
-<link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="main.css">
 </head>
 <body>
     <div class="container">
@@ -367,7 +367,6 @@
             supportPointsContainer.appendChild(table);
         }
 
-        // ---------- UPDATED: generateFeasibleSupportPoints and isPointFeasible ----------
         function generateFeasibleSupportPoints() {
             // Get constraints
             const constraints = getConstraints();
@@ -391,7 +390,7 @@
                 // Start with random decimal values for variables (x0 = 1)
                 const point = [1];
                 for (let j = 0; j < numVariables; j++) {
-                    // random decimals in [0, 20)
+                    // random decimals in [0, 20) - ensuring non-negative values
                     point.push(parseFloat((Math.random() * 20).toFixed(6)));
                 }
 
@@ -424,10 +423,27 @@
                             sumOther += constraint.coefficients[j] * point[j + 1];
                         }
                         const solved = (constraint.rhs - sumOther) / constraint.coefficients[maxIdx];
+                        
+                        // Ensure the solved value is non-negative
+                        if (solved < 0) {
+                            failed = true;
+                            break;
+                        }
+                        
                         point[maxIdx + 1] = parseFloat(solved.toFixed(6)); // keep decimal precision
                     }
                 }
 
+                if (failed) continue;
+
+                // Check if point has any negative values (skip x0 which is always 1)
+                for (let j = 1; j < point.length; j++) {
+                    if (point[j] < 0) {
+                        failed = true;
+                        break;
+                    }
+                }
+                
                 if (failed) continue;
 
                 // Check if point satisfies all constraints (uses tolerance)
@@ -476,7 +492,6 @@
 
             return true;
         }
-        // ---------------------------------------------------------------------------
 
         function getConstraints() {
             const constraints = [];
@@ -924,14 +939,6 @@
             
             document.getElementById('termination-calculation').textContent = calculationText;
             
-            // Display result
-            // document.getElementById('termination-result').innerHTML = `
-            //     <p class="result">f(x_1*) = ${f_x1.toFixed(4)}</p>
-            //     <p class="result">f(x_2*) = ${f_x2.toFixed(4)}</p>
-            //     <p class="result">Difference = ${objectiveValues.difference.toFixed(6)}</p>
-            //     <p class="result">Algorithm ${shouldTerminate ? 'terminates' : 'continues to next iteration'}</p>
-            // `;
-            
             return !shouldTerminate;
         }
 
@@ -968,18 +975,8 @@
             calculationText += `= ${rho2.toFixed(6)}\n\n`;
             
              calculationText += ` Since ρ₂ = ${rho2.toFixed(6)} the optimizer has been obtained in step 5.\n\n`;
-            // calculationText += `Make a move to the new point:\n`;
-            // calculationText += `x3* = x₂* - ρ₂*d*\n`;
-            // calculationText += `= [${newPoint.map(v => v.toFixed(6)).join(', ')}] - ${rho2.toFixed(6)} * [${normalizedDirection.map(v => v.toFixed(6)).join(', ')}]\n`;
-            // calculationText += `= [${secondMovementPoint.map(v => v.toFixed(6)).join(', ')}]`;
             
             document.getElementById('second-movement-calculation').textContent = calculationText;
-            
-            // // Display result
-            // document.getElementById('second-movement-result').innerHTML = `
-            //     <p class="result">New step length: ρ₂* = ${rho2.toFixed(6)}</p>
-            //     <p class="result">Second movement point: x3* = [${secondMovementPoint.map(v => v.toFixed(4)).join(', ')}]</p>
-            // `;
             
             // Update newPoint to be the second movement point for final result
             newPoint = secondMovementPoint;
@@ -1036,8 +1033,8 @@
             nextButton.disabled = false;
         }
 
-        
+       
     </script>
-    <script src="main.js" defer></script>
+    <script src="main.js"></script>
 </body>
 </html>
